@@ -7,6 +7,10 @@ shutil.rmtree(out, ignore_errors=True); os.makedirs(out)
 shutil.copytree(os.path.join(src,"js"), os.path.join(out,"js"))
 for f in ("icon-192.png","icon-512.png","icon-maskable.png","apple-touch-icon.png","favicon.svg"):
     shutil.copy(os.path.join(root,"app",f), out)
+cid = os.environ.get("GOOGLE_CLIENT_ID","").strip()  # public OAuth Client ID only (never a secret)
+cfg = os.path.join(out,"js","config.js"); c = open(cfg,encoding="utf-8").read()
+if cid: c = c.replace('googleClientId: ""','googleClientId: "%s"' % cid.replace('"',''))
+open(cfg,"w",encoding="utf-8").write(c.replace("window.SC_PROD = 0;","window.SC_PROD = 1;"))
 body = open(os.path.join(src,"smart-cash.html"),encoding="utf-8").read()
 body = re.sub(r"<title>.*?</title>\n","",body,count=1)
 body = body.replace('<meta name="claude:viewport-fit-sides" content="cover">\n',"")
@@ -27,7 +31,7 @@ json.dump({"name":"سمارت كاش — Smart Cash","short_name":"Smart Cash","
  "icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png"},{"src":"icon-512.png","sizes":"512x512","type":"image/png"},{"src":"icon-maskable.png","sizes":"512x512","type":"image/png","purpose":"maskable"}]},
  open(os.path.join(out,"manifest.webmanifest"),"w",encoding="utf-8"),ensure_ascii=False,indent=1)
 files = ["./","index.html","manifest.webmanifest","icon-192.png","icon-512.png","favicon.svg"]+sorted(os.path.relpath(p,out).replace(os.sep,"/") for p in glob.glob(out+"/js/**/*.js",recursive=True))
-sw = '''const V="smartcash-v0.8", CORE=%s;
+sw = '''const V="smartcash-v0.9", CORE=%s;
 self.addEventListener("install",e=>{e.waitUntil(caches.open(V).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting()))});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==V).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});
 self.addEventListener("fetch",e=>{ const r=e.request; if(r.method!=="GET") return;

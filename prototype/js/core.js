@@ -477,7 +477,7 @@ SC.byCategory = (invs) => { const by = {}; invs.filter(i=>i.status==="approved")
 
 /* ------------------------------------------------------------------ capabilities */
 const cap = name => (window.claude && typeof window.claude.use==="function") ? window.claude.use(name).catch(()=>null) : Promise.resolve(null);
-SC.saveFile = async (filename, data) => { const dl = await cap("downloads"); if(!dl) return "err_download_unavailable"; try{ await dl.save({filename, data}); return null }catch(e){ return e && e.code==="declined" ? "err_download_declined" : "err_download_unavailable" } };
+SC.saveFile = async (filename, data) => { const dl = await cap("downloads"); if(!dl){ try{ const u = URL.createObjectURL(data instanceof Blob ? data : new Blob([data])), a = document.createElement("a"); a.href = u; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u), 4000); return null }catch{ return "err_download_unavailable" } } try{ await dl.save({filename, data}); return null }catch(e){ return e && e.code==="declined" ? "err_download_declined" : "err_download_unavailable" } };
 SC.aiAvailable = async () => { const s = await cap("sample"); if(!s) return null; try{ const l = await s.limits(); return l && l.images ? s : null }catch{ return null } };
 
 /* ------------------------------------------------------------------ Excel */
