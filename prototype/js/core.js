@@ -113,7 +113,7 @@ SC.approversFor = (inv, role) => {
 };
 
 /* ------------------------------------------------------------------ audit & notifications */
-SC.audit = (ev, d) => { const m = SC.me(); SC.S.audit.unshift({t:SC.now(), by:m?.id||null, ev, d:d||""}); if(SC.S.audit.length>500) SC.S.audit.length = 500 };
+SC.audit = (ev, d) => { const m = SC.me(); SC.S.audit.unshift({t:SC.now(), by:m?.id||null, ev, d:d||""}); if(SC.S.audit.length>3000) SC.S.audit.length = 3000 };
 SC.notify = (to, k, ref, extra) => {
   const me = SC.me()?.id; const list = [...new Set([].concat(to).filter(Boolean))].filter(x=>x!==me);
   list.forEach(id=>SC.S.notifs.unshift({id:"N"+(++SC.S.seq.n), to:id, k, ref, by:me||null, t:SC.now(), read:false, ...(extra||{})}));
@@ -133,8 +133,18 @@ const admins = () => SC.S.users.filter(u=>D.PERMS[u.role]?.includes("approve_acc
 SC.hash = async (pw, salt) => { const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${salt}:${pw}`)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("") };
 SC.policy = pw => { const p = String(pw||""); if(p.length<8) return "pw_short"; if(!/[A-Za-z]/.test(p) || !/\d/.test(p)) return "pw_mix"; return null };
 SC.tempPassword = () => { const a = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789"; const r = new Uint32Array(8); crypto.getRandomValues(r); const s = [...r].map(x=>a[x%a.length]).join(""); return `Sc-${s.slice(0,4)}-${s.slice(4)}7` };
-async function checkPw(u, pw){ if(!u.pw) return pw === D.PASSWORD; return (await SC.hash(pw, u.id)) === u.pw }
-async function setPw(u, pw, mustChange){ u.pw = await SC.hash(pw, u.id); u.mustChange = !!mustChange; u.pwAt = SC.now(); u.fails = 0; if(u.status==="locked") u.status = "active" }
+const b64 = u8 => btoa(String.fromCharCode(...u8)), unb64 = t => Uint8Array.from(atob(t), c=>c.charCodeAt(0));
+const PBK = 210000;
+async function pbk(pw, salt, iters){ const k = await crypto.subtle.importKey("raw", new TextEncoder().encode(String(pw)), "PBKDF2", false, ["deriveBits"]);
+  return new Uint8Array(await crypto.subtle.deriveBits({name:"PBKDF2", hash:"SHA-256", salt, iterations:iters}, k, 256)) }
+SC.hash2 = async (pw) => { const salt = crypto.getRandomValues(new Uint8Array(16)); return `v2$${PBK}$${b64(salt)}$${b64(await pbk(pw, salt, PBK))}` };
+const teq = (a, b) => { if(a.length!==b.length) return false; let d = 0; for(let i=0;i<a.length;i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i); return d===0 };
+async function checkPw(u, pw){
+  if(!u.pw) return !window.SC_PROD && pw === D.PASSWORD;           // sample password works only in the demo build
+  if(u.pw.startsWith("v2$")){ const [, it, sb, hb] = u.pw.split("$"); return teq(b64(await pbk(pw, unb64(sb), +it)), hb) }
+  if(teq(await SC.hash(pw, u.id), u.pw)){ u.pw = await SC.hash2(pw); return true }   // legacy SHA-256 -> upgrade on first good login
+  return false }
+async function setPw(u, pw, mustChange){ u.pw = await SC.hash2(pw); u.mustChange = !!mustChange; u.pwAt = SC.now(); u.fails = 0; if(u.status==="locked") u.status = "active" }
 SC.findLogin = ident => { const id = String(ident||"").trim().toLowerCase(); return SC.S.users.find(x => x.email.toLowerCase()===id || (x.emp && x.emp.toLowerCase()===id)) };
 
 SC.login = (userId, via) => {
@@ -580,8 +590,10 @@ SC.backup = async (photosOnly) => {
 };
 SC.restore = async (file) => {
   try{
+    if(SC.me() && SC.S.plan!=="personal" && !(SC.can("backup_all")||SC.can("export_all"))) return "err_not_allowed";
+    if(file.size > 60*1024*1024) return "err_restore_file";
     let data;
-    if(/\.json$/i.test(file.name)) data = JSON.parse(await file.text());
+    if(/\.json$/i.test(file.name)) data = JSON.parse(await file.text(), (k,v)=> (k==="__proto__"||k==="constructor") ? undefined : v);
     else { if(!window.JSZip) return "err_zip"; const zip = await JSZip.loadAsync(file); const j = zip.file("smart-cash-data.json"); if(!j) return "err_restore_file"; data = JSON.parse(await j.async("string"));
       for(const p of Object.values(zip.files).filter(f=>!f.dir && /^photos\/.+\.(jpe?g|webp)$/i.test(f.name))){ const id = (p.name.match(/(EX-\d{7})/)||[])[1]; if(id) await SC.imgPut(id, await p.async("blob")) } }
     if(!data || data.app!=="smart-cash" || !data.state || data.state.v!==D.VERSION) return "err_restore_file";

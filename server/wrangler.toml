@@ -1,0 +1,7 @@
+name = "smartcash-ai"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+[vars]
+ORIGINS = "https://YOUR-USERNAME.github.io"   # exact origin(s) of your app, comma separated
+MODEL = "openrouter/auto"                     # or a specific free model id from openrouter.ai/models
+# Secret (NOT here):  npx wrangler secret put OPENROUTER_API_KEY

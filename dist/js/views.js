@@ -87,7 +87,7 @@ const managerOpts = (role, project, branch) => {
 
 /* ------------------------------------------------------------------ hairline figures */
 let HL = null; const phoneFigs = [];
-const hlReady = import("https://cdn.jsdelivr.net/npm/@lucasmarkes/hairline@0.5.1/dist/index.js").catch(()=>import("https://unpkg.com/@lucasmarkes/hairline@0.5.1/dist/index.js")).then(m=>(HL=m)).catch(()=>null);
+const hlReady = import("./vendor/hairline.mjs").catch(()=>import("./vendor/hairline.mjs")).then(m=>(HL=m)).catch(()=>null);
 function mountFigs(root, keep){ hlReady.then(()=>{ if(!HL) return; root.querySelectorAll("[data-fig]:not([data-mounted])").forEach(el=>{ const fn = HL[el.dataset.fig]; if(!fn) return; el.dataset.mounted = "1";
   const f = fn(el, {play: el.dataset.play==="1", intensity:.55, label: el.dataset.label||""}); if(!keep) phoneFigs.push(f) }) }) }
 const clearFigs = () => { while(phoneFigs.length){ try{ phoneFigs.pop().destroy() }catch{} } };

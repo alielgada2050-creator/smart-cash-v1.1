@@ -1,0 +1,7 @@
+{
+  "name": "smartcash-desktop", "private": true, "version": "1.0.0", "main": "main.js",
+  "scripts": { "start": "electron .", "dist": "electron-builder" },
+  "build": { "appId": "com.YOURNAME.smartcash", "productName": "Smart Cash", "files": ["main.js", "../dist/**/*"],
+    "win": { "target": "nsis" }, "mac": { "target": "dmg" }, "linux": { "target": "AppImage" } },
+  "devDependencies": { "electron": "^33.0.0", "electron-builder": "^25.0.0" }
+}

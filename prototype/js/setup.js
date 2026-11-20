@@ -28,7 +28,7 @@ SC.setupWorkspace = async d => {
   if(d.pw !== d.pw2) return "pw_mismatch";
   const id = {personal:"u_me", business:"u_owner", enterprise:"u_admin"}[S.plan] || "u_admin", role = {personal:"personal", business:"owner", enterprise:"admin"}[S.plan];
   const u = {id, name:[name,name], role, emp:{personal:"—", business:"O-001", enterprise:"IT-001"}[S.plan], email, google:null, reportsTo:null, branch:S.plan==="enterprise"?"HQ":null, project:null,
-    limit:D.DEFAULT_LIMIT[role] ?? 0, phone:"—", status:"active", pw:await SC.hash(d.pw, id), mustChange:false, fails:0, demo:false, sessions:[], pwAt:SC.now()};
+    limit:D.DEFAULT_LIMIT[role] ?? 0, phone:"—", status:"active", pw:await SC.hash2(d.pw), mustChange:false, fails:0, demo:false, sessions:[], pwAt:SC.now()};
   S.users = [u]; if(S.plan!=="personal") S.org.name = [org, org]; else S.org.name = [name, name];
   S.needsSetup = false; S.clean = true; S.mode = "live";
   SC.reindex(); SC.login(id, "password"); SC.audit("au_clear_samples", "setup"); SC.save(); return null };

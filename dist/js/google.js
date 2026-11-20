@@ -16,7 +16,7 @@ SC.gConfigured = () => !!CID;
 
 async function onCredential(resp){
   const p = jwt(resp && resp.credential);
-  if(!p || p.aud !== CID || !p.email || p.email_verified === false || p.exp*1000 < Date.now()){ UI.sheet = null; H.toast(t("g_bad_token"), true); SC.render(true); return }
+  if(!p || p.aud !== CID || !/^https:\/\/accounts\.google\.com$|^accounts\.google\.com$/.test(p.iss||"") || !p.email || p.email_verified === false || p.exp*1000 < Date.now()){ UI.sheet = null; H.toast(t("g_bad_token"), true); SC.render(true); return }
   const email = String(p.email).toLowerCase(), S = SC.S, me = SC.me();
   if(UI.gMode === "link" && me){ me.google = email; SC.audit("au_google_link", email); SC.save(); UI.sheet = null; H.toast(t("g_linked_ok")); SC.render(true); return }
   let u = S.users.find(x => x.google && x.google.toLowerCase() === email) || S.users.find(x => x.status === "active" && x.email.toLowerCase() === email);

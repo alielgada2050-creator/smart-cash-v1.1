@@ -6,7 +6,8 @@
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Smart Cash">
 <link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="apple-touch-icon.png">
-<script>window.SC_PROD=1</script>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style; font-src https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.googleusercontent.com; media-src 'self' blob:; connect-src 'self' https://accounts.google.com https://www.googleapis.com ; frame-src https://accounts.google.com; object-src 'none'; base-uri 'none'; form-action 'self'; worker-src 'self'">
+<meta name="referrer" content="no-referrer">
 <style>html,body{margin:0;height:100%}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -714,6 +715,26 @@ html.app .view{padding-top:env(safe-area-inset-top,0px)}
 html.app .dock{bottom:max(14px,env(safe-area-inset-bottom,0px))}
 html.app .intro{inset:0}
 @media (min-width:761px){ html.app body{background:var(--stage)} html.app .phone{box-shadow:0 0 0 1px var(--line), 0 30px 80px rgba(0,0,0,.18)} html.app .stage{padding-block:0} }
+
+/* ===== v1.0 finishing layer: typography, focus, motion ===== */
+html{text-rendering:optimizeLegibility; font-optical-sizing:auto; scroll-behavior:smooth}
+body{font-feature-settings:"kern","liga","calt"; letter-spacing:-.003em}
+h1,h2,.h1,.h2,.hero-big{letter-spacing:-.018em; text-wrap:balance}
+.num,.hero-big .num,.t1.num{font-variant-numeric:tabular-nums lining-nums; font-feature-settings:"tnum","lnum"}
+::selection{background:color-mix(in srgb,var(--accent) 28%,transparent)}
+:where(button,a,input,select,textarea,[tabindex]):focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:10px}
+.btn:active,.bubble:active,.chip:active,.iconbtn:active{transform:scale(.965)}
+.glass.list .row{position:relative}
+.glass.list .row + .row::before{content:""; position:absolute; inset-inline:16px; top:0; height:1px; background:var(--line,rgba(127,127,127,.14))}
+.view.enter-tab .glass.list .row,.view.enter-fwd .glass.list .row{animation:rowIn .42s var(--ease-out) backwards}
+.view .glass.list .row:nth-child(2){animation-delay:.03s}.view .glass.list .row:nth-child(3){animation-delay:.06s}.view .glass.list .row:nth-child(4){animation-delay:.09s}.view .glass.list .row:nth-child(5){animation-delay:.12s}.view .glass.list .row:nth-child(n+6){animation-delay:.15s}
+@keyframes rowIn{from{opacity:0; transform:translateY(8px)}}
+.skel{background:linear-gradient(100deg,transparent 30%,rgba(127,127,127,.18) 50%,transparent 70%) 0 0/200% 100%,rgba(127,127,127,.10); animation:skel 1.2s linear infinite; border-radius:10px; min-height:14px}
+@keyframes skel{to{background-position:-200% 0}}
+.btn[disabled]{opacity:.55; pointer-events:none}
+.btn.busy::after{content:""; width:14px; height:14px; margin-inline-start:8px; border-radius:50%; border:2px solid currentColor; border-top-color:transparent; animation:spin .7s linear infinite; display:inline-block; vertical-align:-2px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} .view .glass.list .row,.skel,.btn.busy::after{animation:none!important} }
 </style>
 
 <div class="stage">
@@ -724,9 +745,9 @@ html.app .intro{inset:0}
 <input type="file" id="file-camera" accept="image/*" capture="environment" hidden>
 <input type="file" id="file-restore" accept=".zip,.json,application/zip,application/json" hidden>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script src="vendor/xlsx.min.js"></script>
+<script src="vendor/jszip.min.js"></script>
+<script src="vendor/jsQR.js"></script>
 <script src="js/config.js"></script>
 <script charset="utf-8" src="js/i18n/en.js"></script>
 <script charset="utf-8" src="js/i18n/ar.js"></script>
@@ -753,7 +774,10 @@ html.app .intro{inset:0}
 <script charset="utf-8" src="js/cust.js"></script>
 <script charset="utf-8" src="js/live.js"></script>
 <script charset="utf-8" src="js/setup.js"></script>
+<script src="js/security.js"></script>
 <script src="js/google.js"></script>
+<script src="js/audit.js"></script>
+<script src="js/motion.js"></script>
 <script charset="utf-8" src="js/intro.js"></script>
 
 </body></html>

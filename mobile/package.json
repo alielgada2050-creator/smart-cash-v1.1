@@ -1,0 +1,12 @@
+{
+  "name": "smartcash-mobile",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "sync": "python3 ../app/build.py && cap sync",
+    "android": "cap open android",
+    "ios": "cap open ios"
+  },
+  "dependencies": { "@capacitor/core": "^6.0.0", "@capacitor/android": "^6.0.0", "@capacitor/ios": "^6.0.0" },
+  "devDependencies": { "@capacitor/cli": "^6.0.0" }
+}

@@ -1,0 +1,8 @@
+{
+  "appId": "com.YOURNAME.smartcash",
+  "appName": "Smart Cash",
+  "webDir": "../dist",
+  "server": { "androidScheme": "https", "allowNavigation": ["accounts.google.com", "www.googleapis.com"] },
+  "android": { "allowMixedContent": false },
+  "ios": { "contentInset": "always" }
+}

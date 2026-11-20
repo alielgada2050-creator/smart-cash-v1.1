@@ -12,6 +12,21 @@ cfg = os.path.join(out,"js","config.js"); c = open(cfg,encoding="utf-8").read()
 if cid: c = c.replace('googleClientId: ""','googleClientId: "%s"' % cid.replace('"',''))
 open(cfg,"w",encoding="utf-8").write(c.replace("window.SC_PROD = 0;","window.SC_PROD = 1;"))
 body = open(os.path.join(src,"smart-cash.html"),encoding="utf-8").read()
+os.makedirs(os.path.join(out,"vendor"))
+for f in os.listdir(os.path.join(root,"app","vendor")): shutil.copy(os.path.join(root,"app","vendor",f), os.path.join(out,"vendor"))
+body = body.replace("https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js","vendor/xlsx.min.js").replace("https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js","vendor/jszip.min.js").replace("https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js","vendor/jsQR.js")
+vj = os.path.join(out,"js","views.js"); v = open(vj,encoding="utf-8").read()
+v = v.replace("https://cdn.jsdelivr.net/npm/@lucasmarkes/hairline@0.5.1/dist/index.js","./vendor/hairline.mjs").replace("https://unpkg.com/@lucasmarkes/hairline@0.5.1/dist/index.js","./vendor/hairline.mjs")
+open(vj,"w",encoding="utf-8").write(v)
+aiu = os.environ.get("AI_ENDPOINT","").strip()
+if aiu:
+    c2 = open(cfg,encoding="utf-8").read().replace('aiEndpoint: ""','aiEndpoint: "%s"' % aiu.replace('"',''))
+    open(cfg,"w",encoding="utf-8").write(c2)
+ai_host = aiu.split("/")[0]+"//"+aiu.split("/")[2] if aiu.startswith("http") else ""
+csp = ("default-src 'self'; script-src 'self' https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style; "
+ "font-src https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.googleusercontent.com; media-src 'self' blob:; "
+ "connect-src 'self' https://accounts.google.com https://www.googleapis.com %s; frame-src https://accounts.google.com; object-src 'none'; base-uri 'none'; form-action 'self'; worker-src 'self'" % ai_host).strip()
+
 body = re.sub(r"<title>.*?</title>\n","",body,count=1)
 body = body.replace('<meta name="claude:viewport-fit-sides" content="cover">\n',"")
 head = '''<!doctype html>
@@ -22,16 +37,17 @@ head = '''<!doctype html>
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Smart Cash">
 <link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="apple-touch-icon.png">
-<script>window.SC_PROD=1</script>
+<meta http-equiv="Content-Security-Policy" content="%CSP%">
+<meta name="referrer" content="no-referrer">
 <style>html,body{margin:0;height:100%}</style>
 '''
-open(os.path.join(out,"index.html"),"w",encoding="utf-8").write(head+body.replace("</body>","")+"\n</body></html>\n")
+open(os.path.join(out,"index.html"),"w",encoding="utf-8").write(head.replace('%CSP%',csp)+body.replace("</body>","")+"\n</body></html>\n")
 json.dump({"name":"سمارت كاش — Smart Cash","short_name":"Smart Cash","lang":"ar","dir":"rtl","start_url":"./index.html","scope":"./","display":"standalone","orientation":"any",
  "background_color":"#000000","theme_color":"#000000","description":"إدارة المصروفات والعهد والفواتير",
  "icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png"},{"src":"icon-512.png","sizes":"512x512","type":"image/png"},{"src":"icon-maskable.png","sizes":"512x512","type":"image/png","purpose":"maskable"}]},
  open(os.path.join(out,"manifest.webmanifest"),"w",encoding="utf-8"),ensure_ascii=False,indent=1)
-files = ["./","index.html","manifest.webmanifest","icon-192.png","icon-512.png","favicon.svg"]+sorted(os.path.relpath(p,out).replace(os.sep,"/") for p in glob.glob(out+"/js/**/*.js",recursive=True))
-sw = '''const V="smartcash-v0.9", CORE=%s;
+files = ["./","index.html","manifest.webmanifest","icon-192.png","icon-512.png","favicon.svg"]+sorted(os.path.relpath(p,out).replace(os.sep,"/") for p in glob.glob(out+"/js/**/*.js",recursive=True)+glob.glob(out+"/vendor/*.js")+glob.glob(out+"/vendor/*.mjs"))
+sw = '''const V="smartcash-v1.0", CORE=%s;
 self.addEventListener("install",e=>{e.waitUntil(caches.open(V).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting()))});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==V).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});
 self.addEventListener("fetch",e=>{ const r=e.request; if(r.method!=="GET") return;
