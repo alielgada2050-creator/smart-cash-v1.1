@@ -2,6 +2,7 @@
 window.SC_CONFIG = {
   googleClientId: "",   // e.g. "1234567890-abc123.apps.googleusercontent.com" — see docs/GOOGLE_SETUP.md
   aiEndpoint: "",       // your AI proxy URL (server/worker.js on Cloudflare Workers). Never put an API key here.
+  payEndpoint: "",      // your payment-gateway proxy (server/pay-worker.js). Provider secret keys live ONLY there.
   appUrl: ""            // optional: your public URL (GitHub Pages) shown in the Share sheet
 };
 window.SC_PROD = 0;     // the production build (app/build.py) sets this to 1: no sample data

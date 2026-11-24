@@ -1,0 +1,6 @@
+name = "smartcash-pay"
+main = "pay-worker.js"
+compatibility_date = "2025-01-01"
+[vars]
+ORIGINS = "https://YOUR-USERNAME.github.io"
+# Secrets (NOT here):  npx wrangler secret put MOYASAR_SECRET_KEY --config wrangler-pay.toml

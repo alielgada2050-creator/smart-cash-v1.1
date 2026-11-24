@@ -2,12 +2,13 @@
 
 ما يعمله الربط الآن (v0.9):
 - **تسجيل الدخول بحساب Google** (Google Identity Services) للمستخدمين الجدد: أول مستخدم ينشئ مساحة العمل، وبقية الأصدقاء يرسلون طلب انضمام يوافق عليه المدير.
+- **Google Sheets**: تصدير جدول حي إلى Drive. **Google Calendar**: إضافة تذكير تحصيل العميل كحدث.
 - **Google Drive**: نسخة احتياطية واستعادة (مجلد خاص بالتطبيق `appDataFolder`)، ونسخ احتياطي تلقائي، وتصدير Excel إلى Drive.
 - لا يوجد مفتاح سري في الكود. الـ **Client ID** عام بطبيعته ويوضع في `js/config.js`.
 
 ## 1) إنشاء المشروع
 1. افتح https://console.cloud.google.com وأنشئ مشروعًا باسم Smart Cash.
-2. **APIs & Services → Library** → فعّل **Google Drive API**.
+2. **APIs & Services → Library** → فعّل **Google Drive API** و**Google Calendar API** (للتذكيرات). تصدير Google Sheets يمر عبر Drive ولا يحتاج API إضافية.
 
 ## 2) شاشة الموافقة (OAuth consent screen)
 1. اختر **External**، واكتب اسم التطبيق وبريدك.

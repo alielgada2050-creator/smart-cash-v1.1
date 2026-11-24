@@ -18,11 +18,18 @@ body = body.replace("https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.ful
 vj = os.path.join(out,"js","views.js"); v = open(vj,encoding="utf-8").read()
 v = v.replace("https://cdn.jsdelivr.net/npm/@lucasmarkes/hairline@0.5.1/dist/index.js","./vendor/hairline.mjs").replace("https://unpkg.com/@lucasmarkes/hairline@0.5.1/dist/index.js","./vendor/hairline.mjs")
 open(vj,"w",encoding="utf-8").write(v)
+body = re.sub(r'<script src="vendor/[^"]+"></script>\n?',"",body)   # lazy-libs: loaded on demand by js/lazy.js
+body = re.sub(r'<script charset="utf-8" src="js/i18n/(?!en\.js|ar\.js)[a-z]+\.js"></script>\n?',"",body)   # lazy-i18n
 aiu = os.environ.get("AI_ENDPOINT","").strip()
 if aiu:
     c2 = open(cfg,encoding="utf-8").read().replace('aiEndpoint: ""','aiEndpoint: "%s"' % aiu.replace('"',''))
     open(cfg,"w",encoding="utf-8").write(c2)
-ai_host = aiu.split("/")[0]+"//"+aiu.split("/")[2] if aiu.startswith("http") else ""
+pay = os.environ.get("PAY_ENDPOINT","").strip()
+if pay:
+    c3 = open(cfg,encoding="utf-8").read().replace('payEndpoint: ""','payEndpoint: "%s"' % pay.rstrip("/").replace('"',''))
+    open(cfg,"w",encoding="utf-8").write(c3)
+def host(u): return u.split("/")[0]+"//"+u.split("/")[2] if u.startswith("http") else ""
+ai_host = (host(aiu)+" "+host(pay)).strip(); 
 csp = ("default-src 'self'; script-src 'self' https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style; "
  "font-src https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.googleusercontent.com; media-src 'self' blob:; "
  "connect-src 'self' https://accounts.google.com https://www.googleapis.com %s; frame-src https://accounts.google.com; object-src 'none'; base-uri 'none'; form-action 'self'; worker-src 'self'" % ai_host).strip()
@@ -46,11 +53,11 @@ json.dump({"name":"سمارت كاش — Smart Cash","short_name":"Smart Cash","
  "background_color":"#000000","theme_color":"#000000","description":"إدارة المصروفات والعهد والفواتير",
  "icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png"},{"src":"icon-512.png","sizes":"512x512","type":"image/png"},{"src":"icon-maskable.png","sizes":"512x512","type":"image/png","purpose":"maskable"}]},
  open(os.path.join(out,"manifest.webmanifest"),"w",encoding="utf-8"),ensure_ascii=False,indent=1)
-files = ["./","index.html","manifest.webmanifest","icon-192.png","icon-512.png","favicon.svg"]+sorted(os.path.relpath(p,out).replace(os.sep,"/") for p in glob.glob(out+"/js/**/*.js",recursive=True)+glob.glob(out+"/vendor/*.js")+glob.glob(out+"/vendor/*.mjs"))
-sw = '''const V="smartcash-v1.0", CORE=%s;
+files = ["./","index.html","manifest.webmanifest","icon-192.png","icon-512.png","favicon.svg"]+sorted(os.path.relpath(p,out).replace(os.sep,"/") for p in [q for q in glob.glob(out+"/js/**/*.js",recursive=True) if "/i18n/" not in q or q.endswith(("/en.js","/ar.js"))]+glob.glob(out+"/vendor/hairline.mjs"))
+sw = '''const V="smartcash-v1.1", CORE=%s;
 self.addEventListener("install",e=>{e.waitUntil(caches.open(V).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting()))});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==V).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});
-self.addEventListener("fetch",e=>{ const r=e.request; if(r.method!=="GET") return;
+self.addEventListener("fetch",e=>{ const r=e.request; if(r.method!=="GET") return; if(new URL(r.url).origin!==location.origin && !/^https:\\/\\/fonts\\.(googleapis|gstatic)\\.com\\//.test(r.url)) return;
   e.respondWith(caches.match(r).then(hit=>{ const net=fetch(r).then(res=>{ if(res&&(res.ok||res.type==="opaque")){ const cp=res.clone(); caches.open(V).then(c=>c.put(r,cp)) } return res }).catch(()=>hit||(r.mode==="navigate"?caches.match("index.html"):undefined)); return hit||net })) });
 ''' % json.dumps(files)
 open(os.path.join(out,"sw.js"),"w").write(sw)

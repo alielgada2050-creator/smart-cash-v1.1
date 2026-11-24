@@ -33,10 +33,11 @@ async function renderBtn(){ const el = document.getElementById("g-btn"); if(!el 
   try{ await gis(); google.accounts.id.initialize({client_id:CID, callback:onCredential, ux_mode:"popup"}); google.accounts.id.renderButton(el, {theme:"outline", size:"large", text:"continue_with", shape:"pill", width:280, locale:SC.ui.lang}) }catch(e){ el.textContent = t("g_err",{m:e.message}) } }
 
 /* ---------- Drive ---------- */
-let tok = null, exp = 0, client = null;
-const token = () => new Promise(async (res, rej) => { if(tok && Date.now() < exp - 60000) return res(tok);
-  try{ await gis(); client = client || google.accounts.oauth2.initTokenClient({client_id:CID, scope:SCOPE, callback:r => { if(r.error) rej(new Error(r.error)); else { tok = r.access_token; exp = Date.now() + (+r.expires_in||3600)*1000; res(tok) } }, error_callback:e => rej(new Error(e && e.type || "popup_closed"))}); client.requestAccessToken({prompt:tok ? "" : "consent"}) }catch(e){ rej(e) } });
-const api = async (url, o={}) => { const k = await token(), r = await fetch(url, {...o, headers:{...(o.headers||{}), Authorization:"Bearer "+k}}); if(!r.ok){ const x = await r.text().catch(()=>""); throw new Error(r.status+" "+x.slice(0,120)) } return r };
+const T = {};
+const token = (scope = SCOPE) => new Promise(async (res, rej) => { const c = T[scope] = T[scope] || {}; if(c.tok && Date.now() < c.exp - 60000) return res(c.tok);
+  try{ await gis(); c.cb = {res, rej}; c.client = c.client || google.accounts.oauth2.initTokenClient({client_id:CID, scope, callback:r => { const cb = c.cb; if(r.error) cb.rej(new Error(r.error)); else { c.tok = r.access_token; c.exp = Date.now() + (+r.expires_in||3600)*1000; cb.res(c.tok) } }, error_callback:e => c.cb.rej(new Error(e && e.type || "popup_closed"))}); c.client.requestAccessToken({prompt:c.tok ? "" : "consent"}) }catch(e){ rej(e) } });
+const api = async (url, o={}, scope) => { const k = await token(scope), r = await fetch(url, {...o, headers:{...(o.headers||{}), Authorization:"Bearer "+k}}); if(!r.ok){ const x = await r.text().catch(()=>""); throw new Error(r.status+" "+x.slice(0,120)) } return r };
+SC.gApi = api; SC.gToken = token;
 const multipart = (meta, blob) => { const b = "scb" + Date.now(), mime = blob.type || "application/octet-stream";
   return {body:new Blob([`--${b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n--${b}\r\nContent-Type: ${mime}\r\n\r\n`, blob, `\r\n--${b}--`]), type:`multipart/related; boundary=${b}`} };
 const upload = async (meta, blob, id) => { const m = multipart(meta, blob), url = "https://www.googleapis.com/upload/drive/v3/files" + (id ? "/"+id : "") + "?uploadType=multipart&fields=id,modifiedTime";
@@ -52,7 +53,7 @@ SC.driveExcel = async () => { const orig = SC.saveFile; let got = null; SC.saveF
   try{ const e = await SC.exportAll(); if(e || !got) return e || "err_download_unavailable" } finally { SC.saveFile = orig }
   const blob = got[1] instanceof Blob ? got[1] : new Blob([got[1]]); await upload({name:got[0]}, blob); return null };
 let tmr = null; const baseSave = SC.save;
-SC.save = () => { baseSave(); if(SC.S && SC.S.driveAuto && tok && Date.now() < exp - 60000){ clearTimeout(tmr); tmr = setTimeout(() => { SC.driveBackup().catch(()=>{}) }, 20000) } };
+SC.save = () => { baseSave(); if(SC.S && SC.S.driveAuto && T[SCOPE] && T[SCOPE].tok && Date.now() < T[SCOPE].exp - 60000){ clearTimeout(tmr); tmr = setTimeout(() => { SC.driveBackup().catch(()=>{}) }, 20000) } };
 const run = async (fn, okKey) => { UI.busy = "g"; SC.render(true); try{ const e = await fn(); H.toast(e ? t(e) : t(okKey), !!e) }catch(e){ H.toast(t("g_err",{m:String(e.message||e).slice(0,90)}), true) } UI.busy = null; SC.render(true) };
 
 
@@ -89,4 +90,22 @@ document.addEventListener("click", e => { const b = e.target.closest("[data-act]
   else if(a==="gxl") run(() => SC.driveExcel(), "g_ok_xl");
   else if(a==="gauto"){ SC.S.driveAuto = !SC.S.driveAuto; SC.save(); if(SC.S.driveAuto) token().catch(()=>{}); SC.render(true) }
   else if(a==="gorgok"){ const F = UI.sheet.f || {}; if(!(F.org||"").trim()){ UI.sheet.err = "su_err_org"; SC.render(true); return } finishSetup({org:F.org, name:F.name || F.email, email:F.email}) } }, true);
+
+/* ---------- Google Sheets (Drive converts the .xlsx) + Google Calendar ---------- */
+Object.assign(SCI18N.en,{g_sheet:"Export to Google Sheets",g_sheet_hint:"Creates a live Google Sheet in your Drive",g_ok_sheet:"Google Sheet created",g_cal:"Add to Google Calendar",g_ok_cal:"Added to Google Calendar"});
+Object.assign(SCI18N.ar,{g_sheet:"تصدير إلى Google Sheets",g_sheet_hint:"ينشئ جدول Google Sheets حيًا في Drive",g_ok_sheet:"تم إنشاء جدول Google Sheets",g_cal:"إضافة إلى تقويم Google",g_ok_cal:"أُضيف إلى تقويم Google"});
+const CAL = "https://www.googleapis.com/auth/calendar.events";
+SC.driveSheet = async () => { const orig = SC.saveFile; let got = null; SC.saveFile = async (n, b) => { got = [n, b]; return null };
+  try{ const e = await SC.exportAll(); if(e || !got) return e || "err_download_unavailable" } finally { SC.saveFile = orig }
+  const blob = got[1] instanceof Blob ? got[1] : new Blob([got[1]], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+  await upload({name:got[0].replace(/\.xlsx$/i,""), mimeType:"application/vnd.google-apps.spreadsheet"}, blob); return null };
+SC.calAdd = async (summary, date, description) => { const d = new Date(date + "T00:00:00Z"), nx = new Date(d.getTime() + 864e5).toISOString().slice(0,10);
+  await api("https://www.googleapis.com/calendar/v3/calendars/primary/events", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({summary, description, start:{date}, end:{date:nx}, reminders:{useDefault:false, overrides:[{method:"popup", minutes:540}]}})}, CAL) };
+const baseMe2 = V.me; V.me = () => { let h = baseMe2(); if(!CID || !SC.me()) return h; const row = `<button class="row" data-act="gsheet" ${UI.busy==="g"?"disabled":""}><span class="ico">${ic("sheet",20)}</span><div class="grow"><div class="t1">${t("g_sheet")}</div><div class="t2">${t("g_sheet_hint")}</div></div></button>`;
+  return h.replace(/(<button class="row" data-act="gxl"[\s\S]*?<\/button>)/, `$1${row}`) };
+const basePerson2 = V.person; V.person = () => { let h = basePerson2(); const c = SC.S.contacts && SC.S.contacts.find(x => x.id === UI.p.id); if(!CID || !c || !c.remind) return h;
+  return h.replace('<div class="rm-acts">', `<div class="rm-acts"><button class="chip" data-act="gcal">${ic("clock",14)} ${t("g_cal")}</button>`) };
+document.addEventListener("click", e => { const b = e.target.closest("[data-act]"); if(!b) return; const a = b.dataset.act;
+  if(a==="gsheet") run(() => SC.driveSheet(), "g_ok_sheet");
+  else if(a==="gcal"){ const c = SC.S.contacts.find(x => x.id === UI.p.id); if(c && c.remind) run(async () => { await SC.calAdd(t("rm_title") + ": " + SC.nm(c.n || c.name), c.remind, t("rm_msg", {a:SC.fmt(Math.abs(c.entries.reduce((s, x) => s + (x.dir==="gave" ? x.amt : -x.amt), 0))), c:SC.cur()})); return null }, "g_ok_cal") } }, true);
 })();

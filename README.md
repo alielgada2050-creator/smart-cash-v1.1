@@ -20,3 +20,12 @@ Everything is stored in the browser on the device (no server, no sync). Sample d
 ## Layout
 - `prototype/` source (HTML + JS), `app/` PWA build script and icons, `db/` PostgreSQL schema and tests, `docs/` design and architecture.
 - Smart Cash never holds money; card issuing and transfers are out of scope.
+
+## الإعدادات (متغيّرات GitHub: Settings → Secrets and variables → Actions → Variables)
+| المتغير | الغرض | الدليل |
+|---|---|---|
+| `GOOGLE_CLIENT_ID` | دخول Google + Drive + Sheets + Calendar | docs/GOOGLE_SETUP.md |
+| `AI_ENDPOINT` | وسيط الذكاء الاصطناعي (OpenRouter) | docs/AI_SETUP.md |
+| `PAY_ENDPOINT` | وسيط بوابة الدفع (Moyasar/…) | docs/PAYMENTS.md |
+
+الأسرار (مفاتيح OpenRouter/المزوّد) تبقى في Cloudflare Worker فقط، لا في المستودع. الأمان: docs/SECURITY.md. المتاجر والسطح: docs/STORES.md.

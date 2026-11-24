@@ -1,0 +1,17 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - name: Syntax-check every script
+        run: |
+          for f in prototype/js/*.js prototype/js/i18n/*.js server/*.js desktop/main.js; do node --check "$f" || exit 1; done
+      - name: Build
+        run: python3 app/build.py
+      - name: No secrets committed
+        run: |
+          if grep -rIE "sk_(live|test)_[A-Za-z0-9]{10,}|sk-or-v1-[A-Za-z0-9]{10,}|GOCSPX-[A-Za-z0-9_-]{10,}|AIza[0-9A-Za-z_-]{30,}" --exclude-dir=.git --exclude-dir=.github --exclude-dir=vendor . ; then echo "Possible secret found"; exit 1; fi

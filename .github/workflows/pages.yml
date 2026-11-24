@@ -21,6 +21,8 @@ jobs:
       - run: python3 app/build.py
         env:
           GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
+          AI_ENDPOINT: ${{ vars.AI_ENDPOINT }}
+          PAY_ENDPOINT: ${{ vars.PAY_ENDPOINT }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
