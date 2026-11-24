@@ -20,8 +20,9 @@ export default {
     let body; try { body = JSON.parse(raw) } catch { return new Response(JSON.stringify({ error: "bad json" }), { status: 400, headers: cors }) }
     const lang = body.lang === "ar" ? "ar" : "en";
     const data = JSON.stringify({ currency: body.currency, plan: body.plan, summary: body.summary, findings: body.findings, cash: body.cash }).slice(0, 40000);
-    const r = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST", headers: { "Authorization": "Bearer " + env.OPENROUTER_API_KEY, "Content-Type": "application/json", "X-Title": "Smart Cash" },
+    const base = (env.AI_BASE_URL || "https://openrouter.ai/api/v1").replace(/\/$/, "");   // any OpenAI-compatible server (OpenRouter by default)
+    const r = await fetch(base + "/chat/completions", {
+      method: "POST", headers: { "Authorization": "Bearer " + (env.AI_API_KEY || env.OPENROUTER_API_KEY), "Content-Type": "application/json", "X-Title": "Smart Cash" },
       body: JSON.stringify({ model: env.MODEL || "openrouter/auto", max_tokens: 900, temperature: 0.2, messages: [{ role: "system", content: SYSTEM[lang] }, { role: "user", content: data }] })
     });
     if (!r.ok) return new Response(JSON.stringify({ error: "upstream " + r.status }), { status: 502, headers: cors });
