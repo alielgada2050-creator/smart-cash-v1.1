@@ -5,6 +5,7 @@ root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 src, out = os.path.join(root,"prototype"), os.path.join(root,"dist")
 shutil.rmtree(out, ignore_errors=True); os.makedirs(out)
 shutil.copytree(os.path.join(src,"js"), os.path.join(out,"js"))
+if os.path.isdir(os.path.join(src,"fonts")): shutil.copytree(os.path.join(src,"fonts"), os.path.join(out,"fonts"))
 for f in ("icon-192.png","icon-512.png","icon-maskable.png","apple-touch-icon.png","favicon.svg"):
     shutil.copy(os.path.join(root,"app",f), out)
 cid = os.environ.get("GOOGLE_CLIENT_ID","").strip()  # public OAuth Client ID only (never a secret)
@@ -31,7 +32,7 @@ if pay:
 def host(u): return u.split("/")[0]+"//"+u.split("/")[2] if u.startswith("http") else ""
 ai_host = (host(aiu)+" "+host(pay)).strip(); 
 csp = ("default-src 'self'; script-src 'self' https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style; "
- "font-src https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.googleusercontent.com; media-src 'self' blob:; "
+ "font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.googleusercontent.com; media-src 'self' blob:; "
  "connect-src 'self' https://accounts.google.com https://www.googleapis.com %s; frame-src https://accounts.google.com; object-src 'none'; base-uri 'none'; form-action 'self'; worker-src 'self'" % ai_host).strip()
 
 body = re.sub(r"<title>.*?</title>\n","",body,count=1)
@@ -54,7 +55,7 @@ json.dump({"name":"سمارت كاش — Smart Cash","short_name":"Smart Cash","
  "icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png"},{"src":"icon-512.png","sizes":"512x512","type":"image/png"},{"src":"icon-maskable.png","sizes":"512x512","type":"image/png","purpose":"maskable"}]},
  open(os.path.join(out,"manifest.webmanifest"),"w",encoding="utf-8"),ensure_ascii=False,indent=1)
 files = ["./","index.html","manifest.webmanifest","icon-192.png","icon-512.png","favicon.svg"]+sorted(os.path.relpath(p,out).replace(os.sep,"/") for p in [q for q in glob.glob(out+"/js/**/*.js",recursive=True) if "/i18n/" not in q or q.endswith(("/en.js","/ar.js"))]+glob.glob(out+"/vendor/hairline.mjs"))
-sw = '''const V="smartcash-v1.1", CORE=%s;
+sw = '''const V="smartcash-v1.3", CORE=%s;
 self.addEventListener("install",e=>{e.waitUntil(caches.open(V).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting()))});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==V).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});
 self.addEventListener("fetch",e=>{ const r=e.request; if(r.method!=="GET") return; if(new URL(r.url).origin!==location.origin && !/^https:\\/\\/fonts\\.(googleapis|gstatic)\\.com\\//.test(r.url)) return;

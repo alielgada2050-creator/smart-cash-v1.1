@@ -16,8 +16,8 @@ const wipe = () => { const S = SC.S;
   if(S.payset) S.payset = {holder:"", bank:null, iban:"", stc:"", gateway:null};
   if(S.org){ S.org.name = ["",""]; delete S.org.vat; delete S.org.cr }
   S.mode = "live"; S.clean = true; S.needsSetup = true; SC.reindex(); SC.save() };
-SC.prodClean = () => { if(PROD && !SC.S.clean){ wipe() } };
-if(PROD){ SC.prodClean(); const sw = SC.switchWs; SC.switchWs = ws => { sw(ws); SC.prodClean() }; const rs = SC.reset; SC.reset = () => { rs(); wipe() } }
+SC.prodClean = () => { if(PROD && !SC.demo && !SC.S.clean){ wipe() } };
+if(PROD){ SC.prodClean(); const sw = SC.switchWs; SC.switchWs = ws => { sw(ws); SC.prodClean() }; const rs = SC.reset; SC.reset = () => { rs(); if(!SC.demo) wipe() } }
 
 SC.setupWorkspace = async d => {
   const S = SC.S, name = String(d.name||"").trim(), email = String(d.email||"").trim().toLowerCase(), org = String(d.org||"").trim();
@@ -42,7 +42,7 @@ V.login = () => { let h = baseLogin(); if(PROD) h = h.replace(/placeholder="[^"]
 /* ---------- document vault (IndexedDB, device-local) ---------- */
 let dbp = null; const docDb = () => dbp || (dbp = new Promise(res => { try{ const rq = indexedDB.open("smartcash-docs",1); rq.onupgradeneeded = () => rq.result.createObjectStore("docs",{keyPath:"id"}); rq.onsuccess = () => res(rq.result); rq.onerror = () => res(null) }catch(e){ res(null) } }));
 const tx = async (mode, fn) => { const db = await docDb(); if(!db) return null; return new Promise(res => { const r = fn(db.transaction("docs",mode).objectStore("docs")); r.onsuccess = () => res(r.result); r.onerror = () => res(null) }) };
-const key = () => SC.ws+":";
+const key = () => SC.wsKey()+":";
 let cache = null, loading = false;
 const load = async () => { loading = true; const all = (await tx("readonly", s=>s.getAll())) || []; cache = all.filter(d=>d.id.startsWith(key())).sort((a,b)=>b.t.localeCompare(a.t)); loading = false; SC.render(true) };
 const seeAll = () => SC.can && (SC.can("users") || ["owner","finance","admin"].includes(SC.me().role));

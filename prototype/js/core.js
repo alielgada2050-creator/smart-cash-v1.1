@@ -21,19 +21,23 @@ const store = {
 SC.store = store;
 SC.WS = ["personal","business","enterprise"];
 SC.ws = SC.WS.includes(store.get("ws","")) ? store.get("ws","") : "enterprise";
+SC.demo = SC.WS.includes(store.get("demo","")) ? store.get("demo","") : "";          /* non-empty = browsing the isolated sample workspace of that plan */
+SC.wsKey = () => (SC.demo ? "demo-" + SC.demo : SC.ws);
 function loadState(){
-  let s = null;
-  try{ const raw = store.get("state."+SC.ws, null); if(raw){ const x = JSON.parse(raw); if(x && x.v === D.VERSION) s = x } }catch{}
-  s = s || D.seedFor(SC.ws);
-  s.plan ||= SC.ws; s.integrations ||= D.integrationDefaults(s.plan); s.waOutbox ||= [];
+  let s = null; const plan = SC.demo || SC.ws;
+  try{ const raw = store.get("state."+SC.wsKey(), null); if(raw){ const x = JSON.parse(raw); if(x && x.v === D.VERSION) s = x } }catch{}
+  s = s || D.seedFor(plan);
+  s.plan ||= plan; s.integrations ||= D.integrationDefaults(s.plan); s.waOutbox ||= [];
   return s;
 }
 SC.S = loadState();
 let userIdx = null;
 const reindex = () => { userIdx = new Map(SC.S.users.map(u=>[u.id,u])) };
 reindex(); SC.reindex = reindex;
-SC.save = () => { if(!store.set("state."+SC.ws, JSON.stringify(SC.S))) SC.saveFailed = true };
-SC.reset = () => { SC.S = D.seedFor(SC.ws); reindex(); SC.save(); idbClear() };
+SC.save = () => { if(!store.set("state."+SC.wsKey(), JSON.stringify(SC.S))) SC.saveFailed = true };
+SC.reset = () => { SC.S = D.seedFor(SC.demo || SC.ws); reindex(); SC.save(); idbClear() };
+SC.enterDemo = plan => { if(!SC.WS.includes(plan)) return; SC.save(); SC.demo = plan; store.set("demo", plan); SC.S = loadState(); reindex() };
+SC.exitDemo = () => { SC.save(); SC.demo = ""; store.set("demo", ""); SC.S = loadState(); reindex() };
 SC.switchWs = ws => { if(!SC.WS.includes(ws) || ws===SC.ws) return; SC.save(); SC.ws = ws; store.set("ws", ws); SC.S = loadState(); reindex() };
 SC.plan = () => SC.S.plan;
 SC.orgName = () => pickName(SC.S.org?.name);
