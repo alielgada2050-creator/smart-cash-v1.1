@@ -772,6 +772,16 @@ html.pc .sheet,html.pc .sheet-card{max-width:560px; margin-inline:auto}
 html.pc #demo-ui .dm-bar{padding-inline-start:236px}
 @media (min-width:1180px){ html.pc .view>.grid2{display:grid; grid-template-columns:1fr 1fr; gap:16px} }
 html.pc ::-webkit-scrollbar{width:10px} html.pc ::-webkit-scrollbar-thumb{background:rgba(127,127,127,.35); border-radius:8px}
+
+/* keyboard + inputs */
+input,select,textarea{font-size:max(16px,1em)}
+.btn{min-height:48px}
+.ct-row{display:flex; gap:8px; margin-bottom:-4px}.ct-row .chip{cursor:pointer}
+html.kb .scrim{height:var(--vvh,100%); inset:0 0 auto 0}
+html.kb .sheet{max-height:calc(var(--vvh,100dvh) - 10px); padding-bottom:16px; scroll-padding-block:24px; overscroll-behavior:contain}
+html.kb .dock{display:none}
+.sheet{max-height:min(88%,calc(100dvh - 12px)); -webkit-overflow-scrolling:touch}
+.sheet .btn-primary{position:sticky; bottom:0}
 </style>
 
 <div class="stage">
@@ -817,6 +827,7 @@ html.pc ::-webkit-scrollbar{width:10px} html.pc ::-webkit-scrollbar-thumb{backgr
 <script src="js/demo.js"></script>
 <script src="js/desk.js"></script>
 <script src="js/sync.js"></script>
+<script src="js/mobile.js"></script>
 <script src="js/audit.js"></script>
 <script src="js/motion.js"></script>
 <script src="js/gateway.js"></script>

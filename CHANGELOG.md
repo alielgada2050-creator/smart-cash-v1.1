@@ -1,4 +1,7 @@
 # Changelog
+## v1.3.1
+- Phone ergonomics: sheets follow the on-screen keyboard (visual-viewport aware, `interactive-widget=resizes-content`), primary button stays reachable, Enter jumps to the next field, inputs are ≥16px (no iOS zoom), buttons ≥48px.
+- Contacts: "Pick from contacts" in supplier / custody / new contact / user forms fills name + phone (Contact Picker API on Android Chrome; `.vcf` import fallback elsewhere). Saudi numbers normalised to 05xxxxxxxx. The call log is not readable from a web app.
 ## v1.3
 - **Sample account**: "Try a sample account" on the login screen opens an isolated sandbox (separate storage key, own sample data, guided 6-step tour, Exit button). Your real workspace, documents and Google sync are never touched.
 - **PC / tablet mode**: from 900px wide (or forced in Account → Appearance) the bottom bar becomes a side navigation and content uses a wide centered column; sheets stay readable; phone layout is unchanged.

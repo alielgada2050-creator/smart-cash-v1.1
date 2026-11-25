@@ -39,7 +39,7 @@ body = re.sub(r"<title>.*?</title>\n","",body,count=1)
 body = body.replace('<meta name="claude:viewport-fit-sides" content="cover">\n',"")
 head = '''<!doctype html>
 <html lang="ar" dir="rtl"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 <title>سمارت كاش · Smart Cash</title>
 <meta name="theme-color" content="#000000">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
