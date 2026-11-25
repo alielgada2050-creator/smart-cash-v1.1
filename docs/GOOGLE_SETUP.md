@@ -37,3 +37,6 @@
 - أسرع طريقة: https://www.pwabuilder.com ← الصق رابط موقعك على GitHub Pages ← Android ← نزّل الحزمة (APK/AAB). تحتاج HTTPS وملف manifest (موجود).
 - iPhone: افتح الرابط في Safari ← مشاركة ← «إضافة إلى الشاشة الرئيسية».
 - النشر في Play Store يتطلب حساب مطور (25$ مرة واحدة).
+
+## تقييد من يستطيع الدخول
+في `js/config.js`: `allowedDomains: ["mycompany.com"]` يسمح بحسابات هذا النطاق فقط. اتركه فارغًا لأي حساب Gmail أثناء الاختبار. في وضع Testing يدخل فقط من أضفتهم في Test users.

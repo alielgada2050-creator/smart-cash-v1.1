@@ -161,7 +161,7 @@ SC.passwordLogin = async (ident, pass) => {
   if(u.status==="locked") return "err_locked";
   if(!(await checkPw(u, pass))){
     u.fails = (u.fails||0) + 1;
-    if(u.fails >= 5){ u.status = "locked"; SC.S.audit.unshift({t:SC.now(), by:u.id, ev:"au_locked", d:u.emp}); SC.notify(admins(), "n_locked", {type:"user", id:u.id}) }
+    if(u.fails >= 5 && SC.S.plan !== "personal"){ u.status = "locked"; SC.S.audit.unshift({t:SC.now(), by:u.id, ev:"au_locked", d:u.emp}); SC.notify(admins(), "n_locked", {type:"user", id:u.id}) }
     SC.save(); return u.status==="locked" ? "err_locked" : "err_login";
   }
   u.fails = 0; SC.login(u.id, "password"); SC.save();
@@ -219,7 +219,7 @@ SC.createUser = async (d) => {
 SC.approveAccount = async (id, d) => {
   const u = SC.user(id); if(!u || u.status!=="pending" || !SC.can("approve_accounts")) return {err:"err_not_allowed"};
   Object.assign(u, {role:d.role, branch:d.branch||u.branch, project:d.project||null, reportsTo:d.reportsTo||null, limit:D.DEFAULT_LIMIT[d.role] ?? 0, emp:nextEmp(d.role), status:"active"});
-  delete u.request; const temp = SC.tempPassword(); await setPw(u, temp, true);
+  delete u.request; const temp = SC.tempPassword(); await setPw(u, temp, true); u.totp = null; if(SC.S.guard) delete SC.S.guard.att[String(u.email||"").toLowerCase()];
   SC.audit("au_account_approved", `${u.emp} · ${u.email}`); SC.S.notifs.forEach(n=>{ if(n.ref?.id===id && n.k==="n_account_request") n.read = true }); SC.save();
   return {user:u, temp};
 };

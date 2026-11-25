@@ -14,10 +14,12 @@ const jwt = tok => { try{ const b = tok.split(".")[1].replace(/-/g,"+").replace(
 const rnd = () => { const a = new Uint8Array(16); crypto.getRandomValues(a); return [...a].map(x=>x.toString(36)).join("").slice(0,18) + "aA1" };
 SC.gConfigured = () => !!CID;
 
+let NONCE = null;
 async function onCredential(resp){
   const p = jwt(resp && resp.credential);
-  if(!p || p.aud !== CID || !/^https:\/\/accounts\.google\.com$|^accounts\.google\.com$/.test(p.iss||"") || !p.email || p.email_verified === false || p.exp*1000 < Date.now()){ UI.sheet = null; H.toast(t("g_bad_token"), true); SC.render(true); return }
-  const email = String(p.email).toLowerCase(), S = SC.S, me = SC.me();
+  if(!p || !NONCE || p.nonce !== NONCE || p.aud !== CID || !/^https:\/\/accounts\.google\.com$|^accounts\.google\.com$/.test(p.iss||"") || !p.email || p.email_verified === false || p.exp*1000 < Date.now()){ UI.sheet = null; H.toast(t("g_bad_token"), true); SC.render(true); return }
+  NONCE = null; const email = String(p.email).toLowerCase(), S = SC.S, me = SC.me(), dom = email.split("@")[1], allow = (CFG.allowedDomains || []).map(x => String(x).toLowerCase());
+  if(allow.length && !allow.includes(dom)){ UI.sheet = null; H.toast(t("err_domain"), true); SC.render(true); return }
   if(UI.gMode === "link" && me){ me.google = email; SC.audit("au_google_link", email); SC.save(); UI.sheet = null; H.toast(t("g_linked_ok")); SC.render(true); return }
   let u = S.users.find(x => x.google && x.google.toLowerCase() === email) || S.users.find(x => x.status === "active" && x.email.toLowerCase() === email);
   if(u){ if(!u.google) u.google = email; const err = SC.googleLogin(email); UI.sheet = null; if(err){ H.toast(t(err), true); SC.render(true); return } UI.stack = []; UI.screen = "home"; SC.render(); return }
@@ -30,7 +32,7 @@ async function onCredential(resp){
 async function finishSetup(d){ const pw = rnd(), r = await SC.setupWorkspace({org:d.org, name:d.name, email:d.email, pw, pw2:pw}); if(r){ UI.sheet.err = r; SC.render(true); return }
   SC.me().google = d.email; SC.save(); UI.sheet = null; UI.stack = []; UI.screen = "home"; H.toast(t("su_done")); SC.render() }
 async function renderBtn(){ const el = document.getElementById("g-btn"); if(!el || el.dataset.done) return; el.dataset.done = 1;
-  try{ await gis(); google.accounts.id.initialize({client_id:CID, callback:onCredential, ux_mode:"popup"}); google.accounts.id.renderButton(el, {theme:"outline", size:"large", text:"continue_with", shape:"pill", width:280, locale:SC.ui.lang}) }catch(e){ el.textContent = t("g_err",{m:e.message}) } }
+  try{ await gis(); NONCE = rnd(); google.accounts.id.initialize({client_id:CID, callback:onCredential, ux_mode:"popup", nonce:NONCE, use_fedcm_for_prompt:true}); google.accounts.id.renderButton(el, {theme:"outline", size:"large", text:"continue_with", shape:"pill", width:280, locale:SC.ui.lang}) }catch(e){ el.textContent = t("g_err",{m:e.message}) } }
 
 /* ---------- Drive ---------- */
 const T = {};
